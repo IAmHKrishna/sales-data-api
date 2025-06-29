@@ -152,3 +152,121 @@ export const getRevenueByRegion = async (req: Request, res: Response) => {
   }
 };
 
+
+export const getTopProductsOverall = async (req: Request, res: Response) => {
+  const { startDate, endDate, limit = 5 } = req.query;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ error: "startDate and endDate are required" });
+  }
+
+  try {
+    const orders = await AppDataSource.getRepository(Order)
+      .createQueryBuilder("order")
+      .leftJoinAndSelect("order.product", "product")
+      .where("order.dateOfSale BETWEEN :start AND :end", {
+        start: startDate,
+        end: endDate,
+      })
+      .getMany();
+
+    const productMap: Record<string, { productName: string; quantity: number }> = {};
+
+    for (const order of orders) {
+      const pid = order.product.productId;
+      if (!productMap[pid]) {
+        productMap[pid] = { productName: order.product.name, quantity: 0 };
+      }
+      productMap[pid].quantity += order.quantitySold;
+    }
+
+    const sorted = Object.entries(productMap)
+      .map(([productId, data]) => ({ productId, ...data }))
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, Number(limit));
+
+    res.status(200).json(sorted);
+  } catch (error) {
+    console.error("Top products error:", error);
+    res.status(500).json({ error: "Failed to calculate top products" });
+  }
+};
+
+
+export const getTopProductsByCategory = async (req: Request, res: Response) => {
+  const { startDate, endDate, category, limit = 5 } = req.query;
+
+  if (!startDate || !endDate || !category) {
+    return res.status(400).json({ error: "startDate, endDate and category are required" });
+  }
+
+  try {
+    const orders = await AppDataSource.getRepository(Order)
+      .createQueryBuilder("order")
+      .leftJoinAndSelect("order.product", "product")
+      .where("order.dateOfSale BETWEEN :start AND :end", { start: startDate, end: endDate })
+      .andWhere("product.category = :category", { category })
+      .getMany();
+
+    const productMap: Record<string, { productName: string; quantity: number }> = {};
+
+    for (const order of orders) {
+      const pid = order.product.productId;
+      if (!productMap[pid]) {
+        productMap[pid] = { productName: order.product.name, quantity: 0 };
+      }
+      productMap[pid].quantity += order.quantitySold;
+    }
+
+    const sorted = Object.entries(productMap)
+      .map(([productId, data]) => ({ productId, ...data }))
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, Number(limit));
+
+    res.status(200).json(sorted);
+  } catch (error) {
+    console.error("Top by category error:", error);
+    res.status(500).json({ error: "Failed to calculate top products by category" });
+  }
+};
+
+
+export const getTopProductsByRegion = async (req: Request, res: Response) => {
+  const { startDate, endDate, region, limit = 5 } = req.query;
+
+  if (!startDate || !endDate || !region) {
+    return res.status(400).json({ error: "startDate, endDate and region are required" });
+  }
+
+  try {
+    const orders = await AppDataSource.getRepository(Order)
+      .createQueryBuilder("order")
+      .leftJoinAndSelect("order.product", "product")
+      .where("order.dateOfSale BETWEEN :start AND :end", { start: startDate, end: endDate })
+      .andWhere("order.region = :region", { region })
+      .getMany();
+
+    const productMap: Record<string, { productName: string; quantity: number }> = {};
+
+    for (const order of orders) {
+      const pid = order.product.productId;
+      if (!productMap[pid]) {
+        productMap[pid] = { productName: order.product.name, quantity: 0 };
+      }
+      productMap[pid].quantity += order.quantitySold;
+    }
+
+    const sorted = Object.entries(productMap)
+      .map(([productId, data]) => ({ productId, ...data }))
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, Number(limit));
+
+    res.status(200).json(sorted);
+  } catch (error) {
+    console.error("Top by region error:", error);
+    res.status(500).json({ error: "Failed to calculate top products by region" });
+  }
+};
+
+
+
