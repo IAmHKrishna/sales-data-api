@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { refreshData } from "../services/dataRefresh";
-import { getRevenue,getRevenueByProduct,getRevenueByCategory,getRevenueByRegion,getTopProductsOverall,getTopProductsByCategory,getTopProductsByRegion } from "../services/analytics";
+import { getRevenue,getRevenueByProduct,getRevenueByCategory,getRevenueByRegion,getTopProductsOverall,
+    getTopProductsByCategory,getTopProductsByRegion,getTotalCustomers,getTotalOrders,getAverageOrderValue } from "../services/analytics";
 
 export const router = Router();
 
@@ -13,6 +14,12 @@ router.get("/revenue/by-region", getRevenueByRegion);
 router.get("/top-products/overall", getTopProductsOverall);
 router.get("/top-products/by-category", getTopProductsByCategory);
 router.get("/top-products/by-region", getTopProductsByRegion);
+// Customer Analysis:
+router.get("/customers/total", getTotalCustomers);
+router.get("/orders/total", getTotalOrders);
+router.get("/orders/average-value", getAverageOrderValue);
+
+
 
 
 

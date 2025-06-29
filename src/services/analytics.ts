@@ -269,4 +269,72 @@ export const getTopProductsByRegion = async (req: Request, res: Response) => {
 };
 
 
+export const getTotalCustomers = async (req: Request, res: Response) => {
+  const { startDate, endDate } = req.query;
+
+  if (!startDate || !endDate) return res.status(400).json({ error: "startDate and endDate are required" });
+
+  try {
+    const result = await AppDataSource.getRepository(Order)
+      .createQueryBuilder("order")
+      .select("DISTINCT order.customer")
+      .leftJoin("order.customer", "customer")
+      .where("order.dateOfSale BETWEEN :start AND :end", { start: startDate, end: endDate })
+      .getCount();
+
+    res.json({ totalCustomers: result });
+  } catch (error) {
+    console.error("Customer count error:", error);
+    res.status(500).json({ error: "Failed to count customers" });
+  }
+};
+
+export const getTotalOrders = async (req: Request, res: Response) => {
+  const { startDate, endDate } = req.query;
+
+  if (!startDate || !endDate) return res.status(400).json({ error: "startDate and endDate are required" });
+
+  try {
+    const result = await AppDataSource.getRepository(Order)
+      .createQueryBuilder("order")
+      .where("order.dateOfSale BETWEEN :start AND :end", { start: startDate, end: endDate })
+      .getCount();
+
+    res.json({ totalOrders: result });
+  } catch (error) {
+    console.error("Order count error:", error);
+    res.status(500).json({ error: "Failed to count orders" });
+  }
+};
+
+export const getAverageOrderValue = async (req: Request, res: Response) => {
+  const { startDate, endDate } = req.query;
+
+  if (!startDate || !endDate) return res.status(400).json({ error: "startDate and endDate are required" });
+
+  try {
+    const orders = await AppDataSource.getRepository(Order)
+      .createQueryBuilder("order")
+      .where("order.dateOfSale BETWEEN :start AND :end", { start: startDate, end: endDate })
+      .getMany();
+
+    if (orders.length === 0) return res.json({ averageOrderValue: 0 });
+
+    const totalValue = orders.reduce((sum, o) => {
+      const value = (Number(o.unitPrice) * (1 - Number(o.discount)) * o.quantitySold) + Number(o.shippingCost);
+      return sum + value;
+    }, 0);
+
+    const avgValue = Number((totalValue / orders.length).toFixed(2));
+    res.json({ averageOrderValue: avgValue });
+  } catch (error) {
+    console.error("Avg order value error:", error);
+    res.status(500).json({ error: "Failed to calculate average order value" });
+  }
+};
+
+
+
+
+
 
