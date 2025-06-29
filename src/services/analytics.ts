@@ -65,3 +65,90 @@ export const getRevenueByProduct = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to calculate revenue by product." });
   }
 };
+
+
+export const getRevenueByCategory = async (req: Request, res: Response) => {
+  const { startDate, endDate } = req.query;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ error: "startDate and endDate are required" });
+  }
+
+  try {
+    const orders = await AppDataSource.getRepository(Order)
+      .createQueryBuilder("order")
+      .leftJoinAndSelect("order.product", "product")
+      .where("order.dateOfSale BETWEEN :start AND :end", {
+        start: startDate,
+        end: endDate,
+      })
+      .getMany();
+
+    const revenueMap: Record<string, number> = {};
+
+    for (const order of orders) {
+      const revenue =
+        (Number(order.unitPrice) * (1 - Number(order.discount)) * order.quantitySold) +
+        Number(order.shippingCost);
+
+      const category = order.product.category;
+
+      revenueMap[category] = (revenueMap[category] || 0) + revenue;
+    }
+
+    const result = Object.entries(revenueMap).map(([category, totalRevenue]) => ({
+      category,
+      totalRevenue: Number(totalRevenue.toFixed(4)),
+    }));
+
+    console.log(result, "result");
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error calculating revenue by category:", error);
+    res.status(500).json({ error: "Failed to calculate revenue by category" });
+  }
+};
+
+
+export const getRevenueByRegion = async (req: Request, res: Response) => {
+  const { startDate, endDate } = req.query;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ error: "startDate and endDate are required" });
+  }
+
+  try {
+    const orders = await AppDataSource.getRepository(Order)
+      .createQueryBuilder("order")
+      .leftJoinAndSelect("order.product", "product")
+      .where("order.dateOfSale BETWEEN :start AND :end", {
+        start: startDate,
+        end: endDate,
+      })
+      .getMany();
+
+    const revenueMap: Record<string, number> = {};
+
+    for (const order of orders) {
+      const revenue =
+        (Number(order.unitPrice) * (1 - Number(order.discount)) * order.quantitySold) +
+        Number(order.shippingCost);
+
+      const region = order.region;
+
+      revenueMap[region] = (revenueMap[region] || 0) + revenue;
+    }
+
+    const result = Object.entries(revenueMap).map(([region, totalRevenue]) => ({
+      region,
+      totalRevenue: Number(totalRevenue.toFixed(4)),
+    }));
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error calculating revenue by region:", error);
+    res.status(500).json({ error: "Failed to calculate revenue by region" });
+  }
+};
+
